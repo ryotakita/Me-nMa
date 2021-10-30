@@ -25,6 +25,12 @@ pub enum Sub {
         #[structopt(short = "t", long = "title")]
         title: String,
     },
+    #[structopt(name = "setpath", about = "set path of memo exist directory")]
+    #[structopt(setting(clap::AppSettings::ColoredHelp))]
+    SetPath {
+        #[structopt(short = "p", long = "path")]
+        path: PathBuf,
+    },
 }
 
 struct Memo {
