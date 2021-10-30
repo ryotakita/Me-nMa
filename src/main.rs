@@ -23,7 +23,7 @@ pub enum Sub {
     #[structopt(setting(clap::AppSettings::ColoredHelp))]
     Add {
         #[structopt(short = "t", long = "title")]
-        title: Option<String>,
+        title: String,
     },
 }
 
