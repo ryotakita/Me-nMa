@@ -120,11 +120,23 @@ fn main() {
                 Ok(file) => file,
             };
 
-            let contents = "こんにちは、Rust!";
+            let mut tags_out: String = String::new();
+            match tags {
+                Some(tags) => {
+                    for tag in tags {
+                        tags_out += &(format!("#{} ", tag));
+                    }
+                }
+                None => {}
+            };
+
+            let contents = format!(" <!---\n tags: {}\n --->\n", tags_out);
             match file.write_all(contents.as_bytes()) {
                 Err(why) => panic!("Error"),
                 Ok(_) => println!("finished"),
             }
+
+            launch_file(&(path.to_str().unwrap().to_string() + &filename));
         }
         Sub::SetPath { path } => {}
     }
