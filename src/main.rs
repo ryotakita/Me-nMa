@@ -1,7 +1,18 @@
 use itertools::Itertools;
+use std::error::Error;
+use std::ffi::OsStr;
 use std::fmt;
+use std::fs;
+use std::io::{self, BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use structopt::{clap, StructOpt};
+use windows::{storage::StorageFile, system::Launcher};
+winrt::import!(
+    dependencies
+        os
+    types
+        windows::system::Launcher
+);
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "MenMa")]
@@ -35,7 +46,7 @@ pub enum Sub {
 
 #[derive(Debug, Clone)]
 struct Memo {
-    path: PathBuf,
+    path: String,
     tags: Vec<String>,
 }
 
@@ -54,12 +65,7 @@ impl fmt::Display for Memo {
             .map(|s| s.trim())
             .intersperse(", ")
             .collect();
-        write!(
-            f,
-            "path:{} | tags={}",
-            self.path.to_str().unwrap().to_string(),
-            tags
-        )
+        write!(f, "path:{} | tags={}", self.path, tags)
     }
 }
 fn main() {
@@ -71,16 +77,30 @@ fn main() {
     match args.sub {
         Sub::List { tags } => {
             match tags {
-                Some(tags) => {
+                Some(tags) => loop {
                     let lst_memo_include_thesetags: Vec<Memo> = lst_memo
                         .iter()
                         .filter(|memo| is_include_these_tags(&tags, memo.get_tags()))
                         .cloned()
                         .collect();
-                    for memo in lst_memo_include_thesetags {
-                        println!("{}", memo);
+                    for (i, memo) in lst_memo_include_thesetags.iter().enumerate() {
+                        println!("{}: {}", i, memo);
                     }
-                }
+                    println!("input open document number");
+                    let mut word = String::new();
+                    std::io::stdin().read_line(&mut word).ok();
+                    let answer = word.trim().to_string();
+                    let answer: usize = answer.parse().expect("input is not number.");
+                    match answer < lst_memo_include_thesetags.len() {
+                        true => {
+                            launch_file(&lst_memo_include_thesetags[answer].path).unwrap();
+                            std::process::exit(0);
+                        }
+                        false => {
+                            println!("input number is incorrect.");
+                        }
+                    }
+                },
                 None => {
                     // TODO:エラーハンドリング
                     panic!("tag value is incorrect. please input valid value.")
@@ -95,13 +115,54 @@ fn main() {
 /// 渡されたpathに存在するmdファイルをメモとして返します。
 fn create_memo_list() -> Vec<Memo> {
     let mut lst_memo: Vec<Memo> = Vec::new();
-    for _ in 0..10 {
-        lst_memo.push(Memo {
-            path: PathBuf::new(),
-            tags: vec![String::from("test"), String::from("math")],
-        });
+
+    // TODO:ファイル読み込み
+    let path = Path::new("C:/Users/user/Documents/memo");
+
+    let mut files: Vec<PathBuf> = Vec::new();
+    for files in read_dir("C:/Users/user/Documents/memo") {
+        for file in files {
+            match file.is_file() {
+                true => {
+                    let extension = file.extension().unwrap();
+                    match extension == OsStr::new("md") {
+                        true => {
+                            for line in BufReader::new(fs::File::open(&file).unwrap()).lines() {
+                                let mut line = line.unwrap();
+                                if !line.contains("tags") {
+                                    continue;
+                                }
+                                line.retain(|x| x != ' ');
+
+                                let mut tags: Vec<&str> = line.split('#').collect();
+                                tags.retain(|x| !x.contains("tags:"));
+                                let tags = tags.iter().map(|x| x.to_string()).collect();
+
+                                lst_memo.push(Memo {
+                                    path: file.to_str().unwrap().replace("\\", "/").to_string(),
+                                    tags: tags,
+                                });
+                            }
+                        }
+                        false => {}
+                    }
+                }
+                // ignore this content if item isnt file
+                false => {}
+            }
+        }
     }
+
     lst_memo
+}
+
+pub fn read_dir(path: &str) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+    let dir = fs::read_dir(path)?;
+    let mut files: Vec<PathBuf> = Vec::new();
+    for item in dir.into_iter() {
+        files.push(item?.path());
+    }
+    Ok(files)
 }
 
 fn is_include_these_tags(tags: &Vec<String>, tags_memo: &Vec<String>) -> bool {
@@ -109,6 +170,18 @@ fn is_include_these_tags(tags: &Vec<String>, tags_memo: &Vec<String>) -> bool {
     tags_dummy.retain(|tag| tags_memo.iter().all(|tag_memo| !tag.contains(tag_memo)));
 
     tags_dummy.is_empty()
+}
+
+fn launch_file(path: &str) -> winrt::Result<()> {
+    // ファイルパスから `StorageFile` オブジェクトを取得
+    let file = StorageFile::get_file_from_path_async(path)
+        .unwrap()
+        .get()
+        .unwrap();
+
+    // 既定のプログラムを使用して `file` を開く
+    Launcher::launch_file_async(file).unwrap().get().unwrap();
+    Ok(())
 }
 
 #[cfg(test)]
