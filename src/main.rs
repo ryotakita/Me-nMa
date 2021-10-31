@@ -1,5 +1,6 @@
 use itertools::Itertools;
 use std::error::Error;
+use std::env;
 use std::ffi::OsStr;
 use std::fmt;
 use std::fs;
@@ -174,8 +175,10 @@ fn is_include_these_tags(tags: &Vec<String>, tags_memo: &Vec<String>) -> bool {
 }
 
 fn launch_file(path: &str) -> winrt::Result<()> {
+    //assert!(env::set_current_dir(&Path::new("C:/Users/user/Documents/memo")).is_ok());
     println!("{}", path);
-    Command::new(format!("code {}",path))
+    Command::new("notepad")
+        .arg(path)
         .spawn()
         .expect("failed to open memo");
 
