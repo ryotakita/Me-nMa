@@ -4,6 +4,7 @@ use std::env;
 use std::ffi::OsStr;
 use std::fmt;
 use std::fs;
+use std::io::Write;
 use std::io::{self, BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -35,8 +36,10 @@ pub enum Sub {
     #[structopt(name = "add", about = "add memo")]
     #[structopt(setting(clap::AppSettings::ColoredHelp))]
     Add {
-        #[structopt(short = "t", long = "title")]
+        #[structopt(short = "T", long = "title")]
         title: String,
+        #[structopt(short = "t", long = "tags")]
+        tags: Option<Vec<String>>,
     },
     #[structopt(name = "setpath", about = "set path of memo exist directory")]
     #[structopt(setting(clap::AppSettings::ColoredHelp))]
@@ -67,7 +70,7 @@ impl fmt::Display for Memo {
             .map(|s| s.trim())
             .intersperse(", ")
             .collect();
-        write!(f, "path:{} | tags={}", self.path, tags)
+        write!(f, "path={} | tags={}", self.path, tags)
     }
 }
 fn main() {
@@ -86,7 +89,7 @@ fn main() {
                         .cloned()
                         .collect();
                     for (i, memo) in lst_memo_include_thesetags.iter().enumerate() {
-                        println!("{}: {}", i, memo);
+                        println!("[{}]{}", i, memo);
                     }
                     println!("input open document number");
                     let mut word = String::new();
@@ -109,7 +112,34 @@ fn main() {
                 }
             }
         }
-        Sub::Add { title } => {}
+        Sub::Add { title, tags } => {
+            let path = Path::new("C:/Users/user/Documents/memo/");
+            let filename = title + ".md";
+
+            // 複数回実行した場合上書きされる
+            let mut file = match fs::File::create(path.to_str().unwrap().to_string() + &filename) {
+                Err(why) => panic!("Couldn't create {}", why),
+                Ok(file) => file,
+            };
+
+            let mut tags_out: String = String::new();
+            match tags {
+                Some(tags) => {
+                    for tag in tags {
+                        tags_out += &(format!("#{} ", tag));
+                    }
+                }
+                None => {}
+            };
+
+            let contents = format!(" <!---\n tags: {}\n --->\n", tags_out);
+            match file.write_all(contents.as_bytes()) {
+                Err(why) => panic!("Error"),
+                Ok(_) => println!("finished"),
+            }
+
+            launch_file(&(path.to_str().unwrap().to_string() + &filename));
+        }
         Sub::SetPath { path } => {}
     }
 }
