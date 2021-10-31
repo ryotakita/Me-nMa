@@ -65,7 +65,7 @@ impl fmt::Display for Memo {
             .map(|s| s.trim())
             .intersperse(", ")
             .collect();
-        write!(f, "path:{} | tags={}", self.path, tags)
+        write!(f, "path={} | tags={}", self.path, tags)
     }
 }
 fn main() {
@@ -84,7 +84,7 @@ fn main() {
                         .cloned()
                         .collect();
                     for (i, memo) in lst_memo_include_thesetags.iter().enumerate() {
-                        println!("{}: {}", i, memo);
+                        println!("[{}]{}", i, memo);
                     }
                     println!("input open document number");
                     let mut word = String::new();
