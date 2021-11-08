@@ -206,8 +206,9 @@ fn is_include_these_tags(tags: &Vec<String>, tags_memo: &Vec<String>) -> bool {
 
 fn launch_file(path: &str) -> winrt::Result<()> {
     //assert!(env::set_current_dir(&Path::new("C:/Users/user/Documents/memo")).is_ok());
+    let path = path.replace("/", "\\").to_string();
     println!("{}", path);
-    Command::new("notepad")
+    Command::new("Code.exe")
         .arg(path)
         .spawn()
         .expect("failed to open memo");
