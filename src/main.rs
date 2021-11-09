@@ -155,7 +155,7 @@ fn create_memo_list() -> Vec<Memo> {
             match file.is_file() {
                 true => {
                     let extension = file.extension().unwrap();
-                    match extension == OsStr::new("md") {
+                    match extension == OsStr::new("md") || extension == OsStr::new("txt") {
                         true => {
                             for line in BufReader::new(fs::File::open(&file).unwrap()).lines() {
                                 let mut line = line.unwrap();
