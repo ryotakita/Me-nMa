@@ -1,11 +1,13 @@
 use itertools::Itertools;
 use std::error::Error;
+use std::env;
 use std::ffi::OsStr;
 use std::fmt;
 use std::fs;
 use std::io::Write;
 use std::io::{self, BufRead, BufReader};
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use structopt::{clap, StructOpt};
 use windows::{storage::StorageFile, system::Launcher};
 winrt::import!(
@@ -203,14 +205,14 @@ fn is_include_these_tags(tags: &Vec<String>, tags_memo: &Vec<String>) -> bool {
 }
 
 fn launch_file(path: &str) -> winrt::Result<()> {
-    // ファイルパスから `StorageFile` オブジェクトを取得
-    let file = StorageFile::get_file_from_path_async(path)
-        .unwrap()
-        .get()
-        .unwrap();
+    //assert!(env::set_current_dir(&Path::new("C:/Users/user/Documents/memo")).is_ok());
+    let path = path.replace("/", "\\").to_string();
+    println!("{}", path);
+    Command::new("Code.exe")
+        .arg(path)
+        .spawn()
+        .expect("failed to open memo");
 
-    // 既定のプログラムを使用して `file` を開く
-    Launcher::launch_file_async(file).unwrap().get().unwrap();
     Ok(())
 }
 
