@@ -126,6 +126,8 @@ fn main() {
             match tags {
                 Some(tags) => {
                     for tag in tags {
+                        let (res, _, _) = encoding_rs::UTF_8.decode(&tag.as_ref());
+                        let text = res.into_owned();
                         tags_out += &(format!("#{} ", tag));
                     }
                 }
@@ -160,7 +162,7 @@ fn create_memo_list() -> Vec<Memo> {
                     match extension == OsStr::new("md") || extension == OsStr::new("txt") {
                         true => {
                             for line in BufReader::new(fs::File::open(&file).unwrap()).lines() {
-                                let mut line = line.unwrap();
+                                let mut line = line.expect(&format!("file include invalid encoding. filename={}", file.to_string_lossy()));
                                 if !line.contains("tags") {
                                     continue;
                                 }
