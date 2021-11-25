@@ -170,7 +170,10 @@ fn create_memo_list() -> Vec<Memo> {
                     match extension == OsStr::new("md") || extension == OsStr::new("txt") {
                         true => {
                             for line in BufReader::new(fs::File::open(&file).unwrap()).lines() {
-                                let mut line = line.expect(&format!("file include invalid encoding. filename={}", file.to_string_lossy()));
+                                let mut line = line.expect(&format!(
+                                    "file include invalid encoding. filename={}",
+                                    file.to_string_lossy()
+                                ));
                                 if !line.contains("tags") {
                                     continue;
                                 }
