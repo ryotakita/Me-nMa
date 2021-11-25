@@ -88,11 +88,15 @@ fn main() {
         Sub::List { tags } => {
             match tags {
                 Some(tags) => loop {
-                    let lst_memo_include_thesetags: Vec<Memo> = lst_memo
-                        .iter()
-                        .filter(|memo| is_include_these_tags(&tags, memo.get_tags()))
-                        .cloned()
-                        .collect();
+                    let lst_memo_include_thesetags: Vec<Memo> =
+                        match tags.iter().any(|x| x.contains("all")) {
+                            true => lst_memo.clone(),
+                            false => lst_memo
+                                .iter()
+                                .filter(|memo| is_include_these_tags(&tags, memo.get_tags()))
+                                .cloned()
+                                .collect(),
+                        };
                     for (i, memo) in lst_memo_include_thesetags.iter().enumerate() {
                         println!("[{}]{}", i, memo);
                     }
