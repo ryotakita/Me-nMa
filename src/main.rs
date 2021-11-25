@@ -1,7 +1,8 @@
-use itertools::Itertools;
+use chrono::{Date, DateTime, Local, Utc};
 use encoding_rs;
-use std::error::Error;
+use itertools::Itertools;
 use std::env;
+use std::error::Error;
 use std::ffi::OsStr;
 use std::fmt;
 use std::fs;
@@ -11,7 +12,6 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use structopt::{clap, StructOpt};
 use windows::{storage::StorageFile, system::Launcher};
-use chrono::{Utc, Local, DateTime, Date};
 winrt::import!(
     dependencies
         os
@@ -115,9 +115,8 @@ fn main() {
             }
         }
         Sub::Add { title, tags } => {
-            let path = Path::new("C:/Users/user/Documents/memo/");
-            let filename = title + ".md";
-            let filename = title + &Utc::now().format("_%y%m%d").to_string() + ".md";
+            let path = Path::new("E:/memo/");
+            let filename = Utc::now().format("%y%m%d_").to_string() + &title + ".md";
 
             // 複数回実行した場合上書きされる
             let mut file = match fs::File::create(path.to_str().unwrap().to_string() + &filename) {
