@@ -49,6 +49,9 @@ pub enum Sub {
         #[structopt(short = "p", long = "path")]
         path: PathBuf,
     },
+    #[structopt(name = "todo", about = "open todo.txt")]
+    #[structopt(setting(clap::AppSettings::ColoredHelp))]
+    Todo {},
 }
 
 #[derive(Debug, Clone)]
@@ -145,6 +148,9 @@ fn main() {
             launch_file(&(path.to_str().unwrap().to_string() + &filename));
         }
         Sub::SetPath { path } => {}
+        Sub::Todo {} => {
+            launch_file("E:/memo/todo.md");
+        }
     }
 }
 
