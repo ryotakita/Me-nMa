@@ -20,6 +20,7 @@ winrt::import!(
 );
 
 mod memo;
+mod tui;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "MenMa")]
@@ -75,23 +76,24 @@ fn main() -> Result<()> {
                                 .cloned()
                                 .collect(),
                         };
-                    for (i, memo) in lst_memo_include_thesetags.iter().enumerate() {
-                        println!("[{}]{}", i, memo);
-                    }
-                    println!("input open document number");
-                    let mut word = String::new();
-                    std::io::stdin().read_line(&mut word).ok();
-                    let answer = word.trim().to_string();
-                    let answer: usize = answer.parse().expect("input is not number.");
-                    match answer < lst_memo_include_thesetags.len() {
-                        true => {
-                            launch_file(&lst_memo_include_thesetags[answer].get_path()).unwrap();
-                            std::process::exit(0);
-                        }
-                        false => {
-                            println!("input number is incorrect.");
-                        }
-                    }
+                    tui::launch_tui(&lst_memo_include_thesetags);
+                    //for (i, memo) in lst_memo_include_thesetags.iter().enumerate() {
+                        //println!("[{}]{}", i, memo);
+                    //}
+                    //println!("input open document number");
+                    //let mut word = String::new();
+                    //std::io::stdin().read_line(&mut word).ok();
+                    //let answer = word.trim().to_string();
+                    //let answer: usize = answer.parse().expect("input is not number.");
+                    //match answer < lst_memo_include_thesetags.len() {
+                        //true => {
+                            //launch_file(&lst_memo_include_thesetags[answer].get_path()).unwrap();
+                            //std::process::exit(0);
+                        //}
+                        //false => {
+                            //println!("input number is incorrect.");
+                        //}
+                    //}
                 },
                 None => {
                     bail!("tag value is incorrect. please input valid value.")

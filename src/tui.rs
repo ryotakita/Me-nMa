@@ -3,7 +3,8 @@ mod UserInterface;
 #[allow(dead_code)]
 mod util;
 
-use crate::tui::UserInterface::{ui, App, Task};
+use crate::memo;
+use crate::tui::UserInterface::{ui, App};
 use once_cell::sync::OnceCell;
 use argh::FromArgs;
 use crossterm::{
@@ -52,7 +53,7 @@ pub fn read_line() -> Result<String, Box<dyn Error>> {
     Ok(line)
 }
 
-pub fn launch_tui() -> Result<(), Box<dyn Error>> {
+pub fn launch_tui(lst_memo: &Vec<memo::Memo>) -> Result<(), Box<dyn Error>> {
 
     let cli: Cli = Cli{tick_rate:250, enhanced_graphics:true};
 
@@ -88,7 +89,7 @@ pub fn launch_tui() -> Result<(), Box<dyn Error>> {
         }
     });
 
-    let mut app = App::new("Crossterm Demo", cli.enhanced_graphics);
+    let mut app = App::new("Crossterm Demo", lst_memo, cli.enhanced_graphics);
 
     terminal.clear()?;
 
@@ -112,7 +113,6 @@ pub fn launch_tui() -> Result<(), Box<dyn Error>> {
                         KeyCode::Right => app.on_right(),
                         KeyCode::Down => app.on_down(),
                         KeyCode::Enter => app.on_enter_dir(),
-                        KeyCode::Esc => app.on_all_disp(),
                         _ => {},
                     }
                 },
@@ -126,14 +126,6 @@ pub fn launch_tui() -> Result<(), Box<dyn Error>> {
                             code: KeyCode::Char('u'),
                             modifiers: KeyModifiers::CONTROL,
                         } => { for i in 0..4 { app.on_up() }},
-                        KeyEvent {
-                            code: KeyCode::Char('c'),
-                            modifiers: KeyModifiers::CONTROL,
-                        } => { app.copy_path(); },
-                        KeyEvent {
-                            code: KeyCode::Char('v'),
-                            modifiers: KeyModifiers::CONTROL,
-                        } => { app.paste_path_folders(); },
                         _ => {},
                     }
                 }

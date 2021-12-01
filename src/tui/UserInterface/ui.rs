@@ -140,18 +140,19 @@ where
             .highlight_symbol("> ");
         f.render_stateful_widget(tasks, chunks[0], &mut app.folders[0].state);
 
-        let tasks: Vec<ListItem> = app
-            .folders[1]
-            .items
-            .iter()
-            .map(|i| ListItem::new(vec![Spans::from(Span::raw(format!("{}", i)))]))
-            .collect();
-        let tasks = List::new(tasks)
-            .block(Block::default().borders(Borders::ALL).title("Task"))
-            //.highlight_style(Style::default().add_modifier(Modifier::BOLD))
-            .highlight_style(Style::default().fg(Color::Red))
-            .highlight_symbol("> ");
-        f.render_stateful_widget(tasks, chunks[1], &mut app.folders[1].state);
+        //TODO:プレビュー表示
+        //let tasks: Vec<ListItem> = app
+            //.folders[1]
+            //.items
+            //.iter()
+            //.map(|i| ListItem::new(vec![Spans::from(Span::raw(format!("{}", i)))]))
+            //.collect();
+        //let tasks = List::new(tasks)
+            //.block(Block::default().borders(Borders::ALL).title("Task"))
+            ////.highlight_style(Style::default().add_modifier(Modifier::BOLD))
+            //.highlight_style(Style::default().fg(Color::Red))
+            //.highlight_symbol("> ");
+        //f.render_stateful_widget(tasks, chunks[1], &mut app.folders[1].state);
 
         // Draw logs
         //let clients: Vec<ListItem> = app

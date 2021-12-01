@@ -4,6 +4,7 @@ use std::io::Write;
 use std::io::{self, BufRead, BufReader};
 use once_cell::sync::OnceCell;
 use main;
+use crate::memo;
 use std::fmt::{self, Formatter, Display};
 use std::fs;
 use std::path;
@@ -141,19 +142,6 @@ pub struct Server<'a> {
     pub status: &'a str,
 }
 
-#[derive(Clone)]
-pub struct Task  {
-    pub folder_name: String,
-}
-
-impl Task {
-    pub fn new(folder_nmae: String) -> Self {
-        Task {
-            folder_name: folder_nmae.to_string().clone(),
-        }
-    }
-}
-
 pub fn read_dir(path: &str) -> Result<Vec<path::PathBuf>, Box<dyn Error>> {
     let dir = fs::read_dir(path)?;
     let mut files: Vec<path::PathBuf> = Vec::new();
@@ -172,22 +160,6 @@ pub fn launch_file(path: &str) -> winrt::Result<()> {
     Ok(())
 }
 
-impl Display for Task {
-    // `f` is a buffer, and this method must write the formatted string into it
-    // `f` はバッファです。このメソッドは
-    // ここにフォーマットされた文字列を書き込みます。
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        // `write!` is like `format!`, but it will write the formatted string
-        // into a buffer (the first argument)
-        // `write!`は`format!`に似ていますが、フォーマットされた文字列を
-        // バッファ（第一引数）に書き込みます。
-        let current_dir = Regex::new(r"\\[^\\]*$").unwrap();
-        let mut current_dir = current_dir.find(&self.folder_name).unwrap().as_str().to_string();
-        current_dir.remove(0); // 先頭の\が邪魔なので消しておく
-        write!(f, "{}", current_dir)
-    }
-}
-
 pub struct App<'a> {
     pub title: &'a str,
     pub should_quit: bool,
@@ -195,7 +167,7 @@ pub struct App<'a> {
     pub show_chart: bool,
     pub progress: f64,
     pub sparkline: Signal<RandomSignal>,
-    pub folders: Vec<StatefulList<Task>>,
+    pub folders: Vec<StatefulList<memo::Memo>>,
     pub logs: StatefulList<(&'a str, &'a str)>,
     pub signals: Signals,
     pub barchart: Vec<(&'a str, u64)>,
@@ -206,27 +178,13 @@ pub struct App<'a> {
 }
 
 impl<'a> App<'a> {
-    pub fn new(title: &'a str, enhanced_graphics: bool) -> App<'a> {
+    pub fn new(title: &'a str, lst_memo: &Vec<memo::Memo>, enhanced_graphics: bool) -> App<'a> {
         let mut rand_signal = RandomSignal::new(0, 100);
         let sparkline_points = rand_signal.by_ref().take(300).collect();
         let mut sin_signal = SinSignal::new(0.2, 3.0, 18.0);
         let sin1_points = sin_signal.by_ref().take(100).collect();
         let mut sin_signal2 = SinSignal::new(0.1, 2.0, 10.0);
         let sin2_points = sin_signal2.by_ref().take(200).collect();
-
-        let mut task_list_for1: Vec<Task> = Vec::new();
-        for folders in read_dir("E:\\SRC"){
-            for folder in folders {
-                task_list_for1.push(Task::new(folder.to_str().unwrap().to_string()));
-            }
-        }
-
-        let mut task_list_for2: Vec<Task> = Vec::new();
-        for folders in read_dir("E:\\SRC"){
-            for folder in folders {
-                task_list_for2.push(Task::new(folder.to_str().unwrap().to_string()));
-            }
-        }
 
         App {
             title,
@@ -239,7 +197,7 @@ impl<'a> App<'a> {
                 points: sparkline_points,
                 tick_rate: 1,
             },
-            folders: vec![StatefulList::with_items(task_list_for1),StatefulList::with_items(task_list_for2)] ,
+            folders: vec![StatefulList::with_items(lst_memo.clone())] ,
             folders_index: 0,
             path_copied: "".to_string(),
             logs: StatefulList::with_items(LOGS.to_vec()),
@@ -287,16 +245,6 @@ impl<'a> App<'a> {
         }
     }
 
-    pub fn next_dir(&self, path: &str) -> StatefulList<Task>{
-        let mut task_list: Vec<Task> = Vec::new();
-        for folders in read_dir(path){
-            for folder in folders {
-                task_list.push(Task::new(folder.to_str().unwrap().to_string()));
-            }
-        }
-        StatefulList::with_items(task_list)
-    }
-
     pub fn on_up(&mut self) {
         self.folders[self.folders_index].previous();
     }
@@ -316,53 +264,10 @@ impl<'a> App<'a> {
     pub fn on_enter_dir(&mut self) {
         match self.folders[self.folders_index].state.selected() {
             Some(x) => {
-                let path_target = &self.folders[self.folders_index].items[x].folder_name;
+                let path_target = &self.folders[self.folders_index].items[x].get_path();
                 let path_target = path::Path::new(path_target);
                 let path_target = path::PathBuf::from(path_target);
-                match path_target.is_dir() {
-                    true => {
-                        self.folders[self.folders_index] = self.next_dir(path_target.to_str().unwrap());
-                    },
-                    false => {
-                        launch_file(path_target.to_str().unwrap());
-                    }
-                };
-            }
-            _ => {}
-        }
-    }
-
-    pub fn on_back_dir(&mut self) {
-        match self.folders[self.folders_index].state.selected() {
-            Some(x) => {
-                let path_target = &self.folders[self.folders_index].items[x].folder_name;
-                let path_target = path::Path::new(path_target);
-                let path_target = path::PathBuf::from(path_target);
-                let path_parent = path_target.parent().unwrap().parent();
-                match path_parent {
-                    Some(x) => {
-                        self.folders[self.folders_index] = self.next_dir(x.to_str().unwrap());
-                    },
-                    None => {},
-                }
-            },
-            _ => {}
-        }
-    }
-
-    pub fn on_all_disp(&mut self) {
-        match self.folders[self.folders_index].state.selected() {
-            Some(x) => {
-                let path_target = &self.folders[self.folders_index].items[x].folder_name;
-                let path_target = path::Path::new(path_target);
-                let path_target = path::PathBuf::from(path_target);
-                let path_parent = path_target.parent();
-                match path_parent {
-                    Some(x) => {
-                        self.folders[self.folders_index] = self.next_dir(x.to_str().unwrap());
-                    },
-                    None => {},
-                }
+                launch_file(path_target.to_str().unwrap());
             },
             _ => {}
         }
@@ -376,57 +281,11 @@ impl<'a> App<'a> {
         self.folders_index = 1;
     }
 
-    pub fn copy_path(&mut self) {
-        match self.folders[self.folders_index].state.selected() {
-            Some(x) => {
-                let path_target = &self.folders[self.folders_index].items[x].folder_name;
-                let path_target = path::Path::new(path_target);
-                let path_target = path_target.to_str().unwrap();
-                let content = DataPackage::new().unwrap();
-                content.set_text(path_target.to_string());
-
-                Clipboard::set_content(content);
-                Clipboard::flush();
-                self.path_copied = path_target.to_string();
-            }
-            _ => {}
-        }
-    }
-
-    pub fn paste_path_folders(&mut self) {
-        let options = CopyOptions::new(); 
-        match self.folders[self.folders_index].state.selected() {
-            Some(x) => {
-                let path_target = &self.folders[self.folders_index].items[x].folder_name;
-                let path_target = path::Path::new(path_target);
-                let path_parent = path_target.parent().unwrap();
-                copy(path::Path::new(&self.path_copied), path_parent, &options);
-            }
-            _ => {}
-        }
-
-    }
-
-    // TODO:ファイル読込処理
-    pub fn get_path_of_number(&mut self, number: usize) -> path::PathBuf {
-        let path_target = match number {
-            1 => "C:\\Users\\ryota-kita",
-            2 => "C:\\Users\\ryota-kita\\Documents\\working",
-            3 => "E:\\SRC",
-            4 => "Z:\\",
-            5 => "E:\\機能設計書",
-            _ => "E:",
-        };
-        let path_target = path::Path::new(path_target);
-
-        path::PathBuf::from(path_target)
-    }
-
     pub fn search_string_in_this_path(&mut self, search: &str) {
         // TODO:filterがなぜか使えない...
         let mut lst_new = Vec::new();
         for i in self.folders[self.folders_index].items.iter() {
-            match i.folder_name.to_lowercase().contains(&search.to_lowercase()) {
+            match i.get_path().to_lowercase().contains(&search.to_lowercase()) {
                 true => {lst_new.push(i.clone());},
                 false => {}
             }
@@ -442,42 +301,24 @@ impl<'a> App<'a> {
     }
 
     pub fn on_key(&mut self, c: char, pos: (u16, u16)) {
-        match c.is_numeric() {
-            true => {
-                let path_target = self.get_path_of_number(c as usize - 48);
-                match path_target.is_dir() {
-                    true => {
-                        self.folders[self.folders_index] = self.next_dir(path_target.to_str().unwrap());
-                    },
-                    false => {
-                        launch_file(path_target.to_str().unwrap());
-                    }
-                };
-            }
-            false =>{
-                match c {
-                    'e' => {
-                        self.should_quit = true;
-                        let mut file = File::create("task.txt").expect("writeError");
+        match c {
+            'e' => {
+                self.should_quit = true;
+                let mut file = File::create("task.txt").expect("writeError");
 
-                        for task in self.folders[self.folders_index].items.iter() {
-                            file.write(format!("{}\n",task).as_bytes()).unwrap();
-                        }
-                    }
-                    't' => {
-                        self.show_chart = !self.show_chart;
-                    }
-                    'j' => { self.on_down(); }
-                    'k' => { self.on_up(); }
-                    'c' => { self.on_enter_dir(); }
-                    'l' => { self.on_focus_right_pain(); }
-                    'h' => { self.on_focus_left_pain(); }
-                    'q' => { self.on_back_dir(); }
-                    _ => {}
+                for task in self.folders[self.folders_index].items.iter() {
+                    file.write(format!("{}\n",task).as_bytes()).unwrap();
                 }
             }
-
-
+            't' => {
+                self.show_chart = !self.show_chart;
+            }
+            'j' => { self.on_down(); }
+            'k' => { self.on_up(); }
+            'c' => { self.on_enter_dir(); }
+            'l' => { self.on_focus_right_pain(); }
+            'h' => { self.on_focus_left_pain(); }
+            _ => {}
         }
     }
 
