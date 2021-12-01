@@ -1,5 +1,6 @@
 use crate::tui::util::{RandomSignal, SinSignal, StatefulList, TabsState};
 use std::fs::File;
+use std::process::Command;
 use std::io::Write;
 use std::io::{self, BufRead, BufReader};
 use once_cell::sync::OnceCell;
@@ -151,12 +152,15 @@ pub fn read_dir(path: &str) -> Result<Vec<path::PathBuf>, Box<dyn Error>> {
     Ok(files)
 }
 
-pub fn launch_file(path: &str) -> winrt::Result<()> {
-    // ファイルパスから `StorageFile` オブジェクトを取得
-    let file = StorageFile::get_file_from_path_async(path).unwrap().get().unwrap();
+fn launch_file(path: &str) -> winrt::Result<()> {
+    //assert!(env::set_current_dir(&Path::new("C:/Users/user/Documents/memo")).is_ok());
+    let path = path.replace("/", "\\").to_string();
+    println!("{}", path);
+    Command::new("Code.exe")
+        .arg(path)
+        .spawn()
+        .expect("failed to open memo");
 
-    // 既定のプログラムを使用して `file` を開く
-    Launcher::launch_file_async(file).unwrap().get().unwrap();
     Ok(())
 }
 
