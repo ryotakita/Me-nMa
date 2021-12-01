@@ -4,7 +4,6 @@ use itertools::Itertools;
 use std::env;
 use std::error::Error;
 use std::ffi::OsStr;
-use std::fmt;
 use std::fs;
 use std::io::Write;
 use std::io::{self, BufRead, BufReader};
@@ -18,6 +17,8 @@ winrt::import!(
     types
         windows::system::Launcher
 );
+
+mod memo;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "MenMa")]
@@ -54,30 +55,6 @@ pub enum Sub {
     Todo {},
 }
 
-#[derive(Debug, Clone)]
-struct Memo {
-    path: String,
-    tags: Vec<String>,
-}
-
-impl Memo {
-    pub fn get_tags(&self) -> &Vec<String> {
-        &self.tags
-    }
-}
-
-impl fmt::Display for Memo {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // タグの配列を作る
-        let tags: String = self
-            .get_tags()
-            .iter()
-            .map(|s| s.trim())
-            .intersperse(", ")
-            .collect();
-        write!(f, "path={} | tags={}", self.path, tags)
-    }
-}
 fn main() {
     let args = Opt::from_args();
     println!("{:?}", args);
@@ -88,7 +65,7 @@ fn main() {
         Sub::List { tags } => {
             match tags {
                 Some(tags) => loop {
-                    let lst_memo_include_thesetags: Vec<Memo> =
+                    let lst_memo_include_thesetags: Vec<memo::Memo> =
                         match tags.iter().any(|x| x.contains("all")) {
                             true => lst_memo.clone(),
                             false => lst_memo
@@ -107,7 +84,7 @@ fn main() {
                     let answer: usize = answer.parse().expect("input is not number.");
                     match answer < lst_memo_include_thesetags.len() {
                         true => {
-                            launch_file(&lst_memo_include_thesetags[answer].path).unwrap();
+                            launch_file(&lst_memo_include_thesetags[answer].get_path()).unwrap();
                             std::process::exit(0);
                         }
                         false => {
@@ -159,8 +136,8 @@ fn main() {
 }
 
 /// 渡されたpathに存在するmdファイルをメモとして返します。
-fn create_memo_list() -> Vec<Memo> {
-    let mut lst_memo: Vec<Memo> = Vec::new();
+fn create_memo_list() -> Vec<memo::Memo> {
+    let mut lst_memo: Vec<memo::Memo> = Vec::new();
 
     // TODO:ファイル読み込み
     let path = Path::new("C:/Users/user/Documents/memo");
@@ -187,10 +164,7 @@ fn create_memo_list() -> Vec<Memo> {
                                 tags.retain(|x| !x.contains("tags:"));
                                 let tags = tags.iter().map(|x| x.to_string()).collect();
 
-                                lst_memo.push(Memo {
-                                    path: file.to_str().unwrap().replace("\\", "/").to_string(),
-                                    tags: tags,
-                                });
+                                lst_memo.push(memo::Memo::new(file.to_str().unwrap().replace("\\", "/").to_string(), tags));
                             }
                         }
                         false => {}
