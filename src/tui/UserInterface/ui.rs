@@ -1,4 +1,6 @@
 use crate::tui::UserInterface::App;
+use std::fs::{File, read_to_string};
+use crossterm::style::Styler;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -141,6 +143,28 @@ where
         f.render_stateful_widget(tasks, chunks[0], &mut app.folders[0].state);
 
         //TODO:プレビュー表示
+        match app.folders[0].state.selected() {
+            Some(x) => {
+                let path = app.folders[0].items[x].get_path();
+                let mut contents = read_to_string(path)
+                    .expect("something went wrong reading the file");
+                let text = vec![
+                    Spans::from(
+                        contents
+                    )
+                ];
+                let block = Block::default().borders(Borders::ALL).title(Span::styled(
+                    "Preview",
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                ));
+                let paragraph = Paragraph::new(text).block(block).wrap(Wrap { trim: true });
+                f.render_widget(paragraph, chunks[1]);
+            }
+            _ => {}
+        }
+
         //let tasks: Vec<ListItem> = app
             //.folders[1]
             //.items
