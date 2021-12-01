@@ -1,3 +1,4 @@
+use anyhow::{bail, Context, Result};
 use chrono::{Date, DateTime, Local, Utc};
 use encoding_rs;
 use itertools::Itertools;
@@ -55,7 +56,7 @@ pub enum Sub {
     Todo {},
 }
 
-fn main() {
+fn main() -> Result<()> {
     let args = Opt::from_args();
     println!("{:?}", args);
 
@@ -93,8 +94,7 @@ fn main() {
                     }
                 },
                 None => {
-                    // TODO:エラーハンドリング
-                    panic!("tag value is incorrect. please input valid value.")
+                    bail!("tag value is incorrect. please input valid value.")
                 }
             }
         }
@@ -127,10 +127,14 @@ fn main() {
             }
 
             launch_file(&(path.to_str().unwrap().to_string() + &filename));
+            Ok(())
         }
-        Sub::SetPath { path } => {}
+        Sub::SetPath { path } => {
+            bail!("this function is not implement;")
+        }
         Sub::Todo {} => {
             launch_file("E:/memo/todo.md");
+            Ok(())
         }
     }
 }
@@ -164,7 +168,10 @@ fn create_memo_list() -> Vec<memo::Memo> {
                                 tags.retain(|x| !x.contains("tags:"));
                                 let tags = tags.iter().map(|x| x.to_string()).collect();
 
-                                lst_memo.push(memo::Memo::new(file.to_str().unwrap().replace("\\", "/").to_string(), tags));
+                                lst_memo.push(memo::Memo::new(
+                                    file.to_str().unwrap().replace("\\", "/").to_string(),
+                                    tags,
+                                ));
                             }
                         }
                         false => {}
