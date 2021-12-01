@@ -26,13 +26,11 @@ enum Event<I> {
 }
 
 /// Crossterm demo
-#[derive(Debug, FromArgs)]
+#[derive(Debug)]
 struct Cli {
     /// time in ms between two ticks.
-    #[argh(option, default = "250")]
     tick_rate: u64,
     /// whether unicode symbols are used to improve the overall look of the app
-    #[argh(option, default = "true")]
     enhanced_graphics: bool,
 }
 
@@ -56,7 +54,7 @@ pub fn read_line() -> Result<String, Box<dyn Error>> {
 
 pub fn launch_tui() -> Result<(), Box<dyn Error>> {
 
-    let cli: Cli = argh::from_env();
+    let cli: Cli = Cli{tick_rate:250, enhanced_graphics:true};
 
     enable_raw_mode()?;
 
