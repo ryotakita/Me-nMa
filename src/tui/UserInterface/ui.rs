@@ -149,9 +149,7 @@ where
                 let mut contents = read_to_string(path)
                     .expect("something went wrong reading the file");
                 let text = vec![
-                    Spans::from(
-                        contents
-                    )
+                    Spans::from(contents),
                 ];
                 let block = Block::default().borders(Borders::ALL).title(Span::styled(
                     "Preview",

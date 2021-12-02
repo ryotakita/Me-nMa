@@ -160,6 +160,7 @@ fn launch_file(path: &str) -> winrt::Result<()> {
         .arg(path)
         .spawn()
         .expect("failed to open memo");
+    panic!("not implement");
 
     Ok(())
 }
@@ -308,11 +309,6 @@ impl<'a> App<'a> {
         match c {
             'e' => {
                 self.should_quit = true;
-                let mut file = File::create("task.txt").expect("writeError");
-
-                for task in self.folders[self.folders_index].items.iter() {
-                    file.write(format!("{}\n",task).as_bytes()).unwrap();
-                }
             }
             't' => {
                 self.show_chart = !self.show_chart;

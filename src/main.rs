@@ -68,13 +68,14 @@ fn main() -> Result<()> {
             match tags {
                 Some(tags) => loop {
                     let lst_memo_include_thesetags: Vec<memo::Memo> =
-                        match tags.iter().any(|x| x.contains("all")) {
-                            true => lst_memo.clone(),
-                            false => lst_memo
+                        if tags.iter().any(|x| x.contains("all")) {
+                            lst_memo.clone()
+                        } else {
+                            lst_memo
                                 .iter()
                                 .filter(|memo| is_include_these_tags(&tags, memo.get_tags()))
                                 .cloned()
-                                .collect(),
+                                .collect()
                         };
                     tui::launch_tui(&lst_memo_include_thesetags);
                     //for (i, memo) in lst_memo_include_thesetags.iter().enumerate() {
@@ -146,46 +147,45 @@ fn create_memo_list() -> Vec<memo::Memo> {
     let mut lst_memo: Vec<memo::Memo> = Vec::new();
 
     // TODO:ファイル読み込み
-    let path = Path::new("C:/Users/user/Documents/memo");
+    let path = Path::new("E:/memo");
 
     let mut files: Vec<PathBuf> = Vec::new();
-    for files in read_dir("C:/Users/user/Documents/memo") {
+    for files in read_dir("E:/memo") {
         for file in files {
-            match file.is_file() {
-                true => {
-                    let extension = file.extension().unwrap();
-                    match extension == OsStr::new("md") || extension == OsStr::new("txt") {
-                        true => {
-                            for line in BufReader::new(fs::File::open(&file).unwrap()).lines() {
-                                let mut line = line.expect(&format!(
-                                    "file include invalid encoding. filename={}",
-                                    file.to_string_lossy()
-                                ));
-                                if !line.contains("tags") {
-                                    continue;
-                                }
-                                line.retain(|x| x != ' ');
-
-                                let mut tags: Vec<&str> = line.split('#').collect();
-                                tags.retain(|x| !x.contains("tags:"));
-                                let tags = tags.iter().map(|x| x.to_string()).collect();
-
-                                lst_memo.push(memo::Memo::new(
-                                    file.to_str().unwrap().replace("\\", "/").to_string(),
-                                    tags,
-                                ));
-                            }
+            if !file.is_file() { continue; }
+            if let "md" = file.extension().unwrap().to_str().unwrap() {
+                    for line in BufReader::new(fs::File::open(&file).unwrap()).lines() {
+                        let mut line = line.expect(&format!(
+                            "file include invalid encoding. filename={}",
+                            file.to_string_lossy()
+                        ));
+                        if let Some(tags) = get_tags_by_line(line) {
+                            lst_memo.push(memo::Memo::new(
+                                file.to_str().unwrap().replace("\\", "/").to_string(),
+                                tags,
+                            ));
                         }
-                        false => {}
                     }
                 }
-                // ignore this content if item isnt file
-                false => {}
             }
-        }
     }
 
     lst_memo
+}
+
+fn get_tags_by_line(mut line: String) -> Option<Vec<String>> {
+    match line.contains("tags") {
+        true => {
+            line.retain(|x| x != ' ');
+
+            let mut tags: Vec<&str> = line.split('#').collect();
+            tags.retain(|x| !x.contains("tags:"));
+            Some(tags.iter().map(|x| x.to_string()).collect())
+        }
+        false => {
+            None
+        }
+    }
 }
 
 pub fn read_dir(path: &str) -> Result<Vec<PathBuf>, Box<dyn Error>> {
