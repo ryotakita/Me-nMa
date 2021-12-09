@@ -78,23 +78,6 @@ fn main() -> Result<()> {
                                 .collect()
                         };
                     tui::launch_tui(&lst_memo_include_thesetags);
-                    //for (i, memo) in lst_memo_include_thesetags.iter().enumerate() {
-                        //println!("[{}]{}", i, memo);
-                    //}
-                    //println!("input open document number");
-                    //let mut word = String::new();
-                    //std::io::stdin().read_line(&mut word).ok();
-                    //let answer = word.trim().to_string();
-                    //let answer: usize = answer.parse().expect("input is not number.");
-                    //match answer < lst_memo_include_thesetags.len() {
-                        //true => {
-                            //launch_file(&lst_memo_include_thesetags[answer].get_path()).unwrap();
-                            //std::process::exit(0);
-                        //}
-                        //false => {
-                            //println!("input number is incorrect.");
-                        //}
-                    //}
                 },
                 None => {
                     bail!("tag value is incorrect. please input valid value.")
@@ -149,7 +132,6 @@ fn create_memo_list() -> Vec<memo::Memo> {
     // TODO:ファイル読み込み
     let path = Path::new("E:/memo");
 
-    let mut files: Vec<PathBuf> = Vec::new();
     for files in read_dir("E:/memo") {
         for file in files {
             if !file.is_file() { continue; }
@@ -165,25 +147,29 @@ fn create_memo_list() -> Vec<memo::Memo> {
 }
 
 fn create_memo_from_file(file: &PathBuf) -> Option<memo::Memo> {
-    let lines = match fs::read_to_string(&file) {
-        Ok(text) => text.lines().clone(),
-        Err(e) =>  {
+    let text = match fs::read_to_string(&file) {
+        Ok(text) => text,
+        Err(_) =>  {
             let s = fs::read(&file).unwrap();
             let (res, _, _) = encoding_rs::SHIFT_JIS.decode(&s);
-            let text = res.into_owned();
-            text.lines().clone()
+            res.into_owned()
         }
     };
-    for line in lines {
-        if let Some(tags) = get_tags_by_line(line.to_string()) {
-            return Some(memo::Memo::new(
-                file.to_str().unwrap().replace("\\", "/").to_string(),
-                tags,
-            ));
-        }
-    }
 
-    None
+    let lines = text.lines();
+
+    lines.into_iter().find_map(|line| {
+        match get_tags_by_line(line.to_string()) {
+            Some(tags) => {
+                Some(memo::Memo::new(
+                    file.to_str().unwrap().replace("\\", "/").to_string(),
+                    tags,
+                ))
+            },
+            None => None,
+        }
+    })
+
 }
 
 fn get_tags_by_line(mut line: String) -> Option<Vec<String>> {
