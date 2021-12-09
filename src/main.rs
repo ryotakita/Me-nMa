@@ -1,17 +1,12 @@
-use anyhow::{bail, Context, Result};
-use chrono::{Date, DateTime, Local, Utc};
+use anyhow::{bail, Result};
+use chrono::{Utc};
 use encoding_rs;
-use itertools::Itertools;
-use std::env;
 use std::error::Error;
-use std::ffi::OsStr;
 use std::fs;
-use std::io::{Write, Read};
-use std::io::{self, BufRead, BufReader};
+use std::io::{Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use structopt::{clap, StructOpt};
-use windows::{storage::StorageFile, system::Launcher};
 winrt::import!(
     dependencies
         os
@@ -77,7 +72,7 @@ fn main() -> Result<()> {
                                 .cloned()
                                 .collect()
                         };
-                    tui::launch_tui(&lst_memo_include_thesetags);
+                    tui::launch_tui(&lst_memo_include_thesetags).unwrap();
                 },
                 None => {
                     bail!("tag value is incorrect. please input valid value.")
@@ -98,8 +93,6 @@ fn main() -> Result<()> {
             match tags {
                 Some(tags) => {
                     for tag in tags {
-                        let (res, _, _) = encoding_rs::UTF_8.decode(&tag.as_ref());
-                        let text = res.into_owned();
                         tags_out += &(format!("#{} ", tag));
                     }
                 }
@@ -108,18 +101,18 @@ fn main() -> Result<()> {
 
             let contents = format!(" <!---\n tags: {}\n --->\n", tags_out);
             match file.write_all(contents.as_bytes()) {
-                Err(why) => panic!("Error"),
+                Err(why) => panic!("Error:{}", why),
                 Ok(_) => println!("finished"),
             }
 
-            launch_file(&(path.to_str().unwrap().to_string() + &filename));
+            launch_file(&(path.to_str().unwrap().to_string() + &filename)).unwrap();
             Ok(())
         }
-        Sub::SetPath { path } => {
+        Sub::SetPath { path: _ } => {
             bail!("this function is not implement;")
         }
         Sub::Todo {} => {
-            launch_file("E:/memo/todo.md");
+            launch_file("E:/memo/todo.md").unwrap();
             Ok(())
         }
     }

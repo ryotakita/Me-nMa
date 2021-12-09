@@ -1,12 +1,10 @@
 #[allow(dead_code)]
-mod UserInterface;
+mod user_interface;
 #[allow(dead_code)]
 mod util;
 
 use crate::memo;
-use crate::tui::UserInterface::{ui, App};
-use once_cell::sync::OnceCell;
-use argh::FromArgs;
+use crate::tui::user_interface::{ui, App};
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event as CEvent, KeyCode, KeyEvent, KeyModifiers},
     execute,
@@ -85,7 +83,7 @@ pub fn launch_tui(lst_memo: &Vec<memo::Memo>) -> Result<(), Box<dyn Error>> {
                 if last_tick.elapsed() >= tick_rate {
                     match tx.send(Event::Tick) {
                         Err(e) => {
-                            panic!("send error.");
+                            panic!("send error:{}", e);
                         },
                         _ => {}
                     }
@@ -136,11 +134,11 @@ pub fn launch_tui(lst_memo: &Vec<memo::Memo>) -> Result<(), Box<dyn Error>> {
                         KeyEvent {
                             code: KeyCode::Char('d'),
                             modifiers: KeyModifiers::CONTROL,
-                        } => { for i in 0..4 { app.on_down() }},
+                        } => { (0..4).for_each(|_| app.on_down()) },
                         KeyEvent {
                             code: KeyCode::Char('u'),
                             modifiers: KeyModifiers::CONTROL,
-                        } => { for i in 0..4 { app.on_up() }},
+                        } => { (0..4).for_each(|_| app.on_up()) },
                         _ => {},
                     }
                 }
