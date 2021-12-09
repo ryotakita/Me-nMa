@@ -127,23 +127,12 @@ fn main() -> Result<()> {
 
 /// 渡されたpathに存在するmdファイルをメモとして返します。
 fn create_memo_list() -> Vec<memo::Memo> {
-    let mut lst_memo: Vec<memo::Memo> = Vec::new();
-
     // TODO:ファイル読み込み
-    let path = Path::new("E:/memo");
+    let directory = read_dir("E:/memo").unwrap();
+    let files = directory.into_iter().filter(|file| file.is_file() );
+    let files_md = files.filter(|file| "md" == file.extension().unwrap().to_str().unwrap() );
 
-    for files in read_dir("E:/memo") {
-        for file in files {
-            if !file.is_file() { continue; }
-            if let "md" = file.extension().unwrap().to_str().unwrap() {
-                if let Some(memo) = create_memo_from_file(&file) {
-                    lst_memo.push(memo);
-                }
-            }
-        }
-    }
-
-    lst_memo
+    files_md.filter_map(|file| create_memo_from_file(&file)).collect()
 }
 
 fn create_memo_from_file(file: &PathBuf) -> Option<memo::Memo> {
