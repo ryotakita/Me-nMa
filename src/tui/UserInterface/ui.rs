@@ -1,5 +1,5 @@
 use crate::tui::UserInterface::App;
-use std::fs::{File, read_to_string};
+use std::fs::{File, read_to_string, read};
 use crossterm::style::Styler;
 use tui::{
     backend::Backend,
@@ -146,8 +146,14 @@ where
         match app.folders[0].state.selected() {
             Some(x) => {
                 let path = app.folders[0].items[x].get_path();
-                let mut contents = read_to_string(path)
-                    .expect("something went wrong reading the file");
+                let mut contents = match read_to_string(path) {
+                    Ok(content) => content,
+                    Err(e) => {
+                        let s = read(path).unwrap();
+                        let (res, _, _) = encoding_rs::SHIFT_JIS.decode(&s);
+                        res.into_owned()
+                    }
+                };
                 let text = vec![
                     Spans::from(contents),
                 ];

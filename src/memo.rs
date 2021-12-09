@@ -30,6 +30,6 @@ impl fmt::Display for Memo {
             .iter()
             .map(|s| s.trim().to_owned() + ", ")
             .collect();
-        write!(f, "path={} | tags={}", self.path, tags)
+        write!(f, "{:<50} | tags={}", self.path, tags)
     }
 }

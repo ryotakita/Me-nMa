@@ -6,7 +6,7 @@ use std::env;
 use std::error::Error;
 use std::ffi::OsStr;
 use std::fs;
-use std::io::Write;
+use std::io::{Write, Read};
 use std::io::{self, BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -154,23 +154,36 @@ fn create_memo_list() -> Vec<memo::Memo> {
         for file in files {
             if !file.is_file() { continue; }
             if let "md" = file.extension().unwrap().to_str().unwrap() {
-                    for line in BufReader::new(fs::File::open(&file).unwrap()).lines() {
-                        let mut line = line.expect(&format!(
-                            "file include invalid encoding. filename={}",
-                            file.to_string_lossy()
-                        ));
-                        if let Some(tags) = get_tags_by_line(line) {
-                            lst_memo.push(memo::Memo::new(
-                                file.to_str().unwrap().replace("\\", "/").to_string(),
-                                tags,
-                            ));
-                        }
-                    }
+                if let Some(memo) = create_memo_from_file(&file) {
+                    lst_memo.push(memo);
                 }
             }
+        }
     }
 
     lst_memo
+}
+
+fn create_memo_from_file(file: &PathBuf) -> Option<memo::Memo> {
+    let lines = match fs::read_to_string(&file) {
+        Ok(text) => text.lines().clone(),
+        Err(e) =>  {
+            let s = fs::read(&file).unwrap();
+            let (res, _, _) = encoding_rs::SHIFT_JIS.decode(&s);
+            let text = res.into_owned();
+            text.lines().clone()
+        }
+    };
+    for line in lines {
+        if let Some(tags) = get_tags_by_line(line.to_string()) {
+            return Some(memo::Memo::new(
+                file.to_str().unwrap().replace("\\", "/").to_string(),
+                tags,
+            ));
+        }
+    }
+
+    None
 }
 
 fn get_tags_by_line(mut line: String) -> Option<Vec<String>> {
