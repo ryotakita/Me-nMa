@@ -140,21 +140,19 @@ impl<'a> App<'a> {
     }
 
     pub fn search_string_in_this_path(&mut self, search: &str) {
-        // TODO:filterがなぜか使えない...
-        let mut lst_new = Vec::new();
-        for i in self.folders[self.folders_index].items.iter() {
-            match i.get_path().to_lowercase().contains(&search.to_lowercase()) {
-                true => {lst_new.push(i.clone());},
-                false => {}
-            }
-        }
+        let lst_new: Vec<memo::Memo> = 
+            self.folders[self.folders_index].items
+                .clone()
+                .into_iter()
+                .filter(|item| 
+                    item.get_path()
+                    .to_lowercase()
+                    .contains(&search.to_lowercase())
+                ).collect();
 
-        match lst_new.is_empty() {
-            true => {},
-            false => {
-                self.folders[self.folders_index] = StatefulList::with_items(lst_new);
-            }
-        }
+        if let false = lst_new.is_empty() {
+            self.folders[self.folders_index] = StatefulList::with_items(lst_new);
+        };
         
     }
 
