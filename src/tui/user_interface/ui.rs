@@ -95,9 +95,7 @@ where
                         res.into_owned()
                     }
                 };
-                let text = vec![
-                    Spans::from(contents),
-                ];
+                let text: Vec<Spans> = contents.lines().into_iter().map(|line| Spans::from(line)).collect();
                 let block = Block::default().borders(Borders::ALL).title(Span::styled(
                     "Preview",
                     Style::default()
