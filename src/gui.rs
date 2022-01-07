@@ -16,6 +16,7 @@ pub struct TemplateApp {
     value: f32,
     search: String,
     lst_memo: Vec<memo::Memo>,
+    path_of_show: String,
 }
 
 impl Default for TemplateApp {
@@ -26,6 +27,7 @@ impl Default for TemplateApp {
             value: 2.7,
             search: "".to_owned(),
             lst_memo: Vec::new(),
+            path_of_show: "".to_owned(),
         }
     }
 }
@@ -71,7 +73,7 @@ impl epi::App for TemplateApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame) {
-        let Self { label, value , search, lst_memo,} = self;
+        let Self { label, value , search, lst_memo, path_of_show} = self;
 
         // Examples of how to create different panels and windows.
         // Pick whichever suits you.
@@ -102,9 +104,18 @@ impl epi::App for TemplateApp {
         egui::SidePanel::left("MemoList").show(ctx, |ui| {
             ui.heading("MemoList");
 
+            let mut selected_candidate: Vec<egui::Response>= Vec::new();
+            let lst_memo_: &Vec<memo::Memo> = &lst_memo.clone();
             for memo in lst_memo {
                 // TODO:ドラッグの実装
-                ui.add(egui::TextEdit::singleline(&mut memo.get_path().clone()));
+                let response = ui.add(egui::TextEdit::singleline(&mut memo.get_path().clone()));
+                selected_candidate.push(response);
+            }
+            
+            for (i, candidate) in selected_candidate.iter().enumerate() {
+                if candidate.clicked() {
+                    *path_of_show = lst_memo_[i].get_path().clone();
+                }
             }
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
@@ -121,8 +132,7 @@ impl epi::App for TemplateApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             // The central panel the region left after adding TopPanel's and SidePanel's
 
-            ui.heading("eframe template");
-            ui.hyperlink("https://github.com/emilk/eframe_template");
+            ui.heading("Preview");
             ui.add(egui::github_link_file!(
                 "https://github.com/emilk/eframe_template/blob/master/",
                 "Source code."
