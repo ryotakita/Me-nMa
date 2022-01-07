@@ -16,6 +16,7 @@ winrt::import!(
 
 mod memo;
 mod tui;
+mod gui;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "MenMa")]
@@ -50,6 +51,9 @@ pub enum Sub {
     #[structopt(name = "todo", about = "open todo.txt")]
     #[structopt(setting(clap::AppSettings::ColoredHelp))]
     Todo {},
+    #[structopt(name = "gui", about = "launch gui mode")]
+    #[structopt(setting(clap::AppSettings::ColoredHelp))]
+    GUI {},
 }
 
 fn main() -> Result<()> {
@@ -115,6 +119,11 @@ fn main() -> Result<()> {
             launch_file("E:/memo/todo.md").unwrap();
             Ok(())
         }
+        Sub::GUI {} => {
+            let app = gui::TemplateApp::default();
+            let native_options = eframe::NativeOptions::default();
+            eframe::run_native(Box::new(app), native_options); 
+        }
     }
 }
 
@@ -122,6 +131,7 @@ fn main() -> Result<()> {
 fn create_memo_list() -> Vec<memo::Memo> {
     // TODO:ファイル読み込み
     let directory = read_dir("E:/memo").unwrap();
+
     let files = directory.into_iter().filter(|file| file.is_file() );
     let files_md = files.filter(|file| "md" == file.extension().unwrap().to_str().unwrap() );
 
