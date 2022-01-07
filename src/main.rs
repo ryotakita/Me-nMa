@@ -16,6 +16,7 @@ winrt::import!(
 
 mod memo;
 mod tui;
+mod gui;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "MenMa")]
@@ -50,13 +51,16 @@ pub enum Sub {
     #[structopt(name = "todo", about = "open todo.txt")]
     #[structopt(setting(clap::AppSettings::ColoredHelp))]
     Todo {},
+    #[structopt(name = "gui", about = "launch gui mode")]
+    #[structopt(setting(clap::AppSettings::ColoredHelp))]
+    GUI {},
 }
 
 fn main() -> Result<()> {
     let args = Opt::from_args();
     println!("{:?}", args);
 
-    let lst_memo = create_memo_list();
+    let lst_memo = memo::create_memo_list();
 
     match args.sub {
         Sub::List { tags } => {
@@ -68,7 +72,7 @@ fn main() -> Result<()> {
                         } else {
                             lst_memo
                                 .iter()
-                                .filter(|memo| is_include_these_tags(&tags, memo.get_tags()))
+                                .filter(|memo| memo::is_include_these_tags(&tags, memo.get_tags()))
                                 .cloned()
                                 .collect()
                         };
@@ -115,74 +119,12 @@ fn main() -> Result<()> {
             launch_file("E:/memo/todo.md").unwrap();
             Ok(())
         }
-    }
-}
-
-/// 渡されたpathに存在するmdファイルをメモとして返します。
-fn create_memo_list() -> Vec<memo::Memo> {
-    // TODO:ファイル読み込み
-    let directory = read_dir("E:/memo").unwrap();
-    let files = directory.into_iter().filter(|file| file.is_file() );
-    let files_md = files.filter(|file| "md" == file.extension().unwrap().to_str().unwrap() );
-
-    files_md.filter_map(|file| create_memo_from_file(&file)).collect()
-}
-
-fn create_memo_from_file(file: &PathBuf) -> Option<memo::Memo> {
-    let text = match fs::read_to_string(&file) {
-        Ok(text) => text,
-        Err(_) =>  {
-            let s = fs::read(&file).unwrap();
-            let (res, _, _) = encoding_rs::SHIFT_JIS.decode(&s);
-            res.into_owned()
-        }
-    };
-
-    let lines = text.lines();
-
-    lines.into_iter().find_map(|line| {
-        match get_tags_by_line(line.to_string()) {
-            Some(tags) => {
-                Some(memo::Memo::new(
-                    file.to_str().unwrap().replace("\\", "/").to_string(),
-                    tags,
-                ))
-            },
-            None => None,
-        }
-    })
-
-}
-
-fn get_tags_by_line(mut line: String) -> Option<Vec<String>> {
-    match line.contains("tags") {
-        true => {
-            line.retain(|x| x != ' ');
-
-            let mut tags: Vec<&str> = line.split('#').collect();
-            tags.retain(|x| !x.contains("tags:"));
-            Some(tags.iter().map(|x| x.to_string()).collect())
-        }
-        false => {
-            None
+        Sub::GUI {} => {
+            let app = gui::TemplateApp::default();
+            let native_options = eframe::NativeOptions::default();
+            eframe::run_native(Box::new(app), native_options); 
         }
     }
-}
-
-pub fn read_dir(path: &str) -> Result<Vec<PathBuf>, Box<dyn Error>> {
-    let dir = fs::read_dir(path)?;
-    let mut files: Vec<PathBuf> = Vec::new();
-    for item in dir.into_iter() {
-        files.push(item?.path());
-    }
-    Ok(files)
-}
-
-fn is_include_these_tags(tags: &Vec<String>, tags_memo: &Vec<String>) -> bool {
-    let mut tags_dummy = tags.clone();
-    tags_dummy.retain(|tag| tags_memo.iter().all(|tag_memo| !tag.contains(tag_memo)));
-
-    tags_dummy.is_empty()
 }
 
 fn launch_file(path: &str) -> winrt::Result<()> {
@@ -195,33 +137,4 @@ fn launch_file(path: &str) -> winrt::Result<()> {
         .expect("failed to open memo");
 
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn is_include_these_tags_test() {
-        assert_eq!(
-            is_include_these_tags(
-                &vec!["foo".to_string(), "bar".to_string()],
-                &vec!["foo".to_string(), "bar".to_string()]
-            ),
-            true
-        );
-        assert_eq!(
-            is_include_these_tags(
-                &vec!["foo".to_string(), "bar".to_string()],
-                &vec!["foo".to_string()]
-            ),
-            false
-        );
-        assert_eq!(
-            is_include_these_tags(
-                &vec!["foo".to_string()],
-                &vec!["foo".to_string(), "bar".to_string()]
-            ),
-            true
-        );
-    }
 }
