@@ -1,7 +1,8 @@
 use eframe::{
-    egui::{self, FontDefinitions, FontFamily, FontData},
+    egui::{self, FontDefinitions, FontFamily, FontData, ScrollArea},
     epi,
 };
+use std::fs::{read_to_string, read};
 use crate::memo;
 mod easy_mark;
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -131,9 +132,21 @@ impl epi::App for TemplateApp {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            // The central panel the region left after adding TopPanel's and SidePanel's
-
             ui.heading("Preview");
+            // The central panel the region left after adding TopPanel's and SidePanel's
+            ScrollArea::vertical().show(ui, |ui| {
+                if path_of_show != "" {
+                    let contents = match read_to_string(&*path_of_show) {
+                        Ok(content) => content,
+                        Err(_) => {
+                            let s = read(&*path_of_show).unwrap();
+                            let (res, _, _) = encoding_rs::SHIFT_JIS.decode(&s);
+                            res.into_owned()
+                        }
+                    };
+                    easy_mark::easy_mark(ui, &contents);
+                }
+            });
             ui.add(egui::github_link_file!(
                 "https://github.com/emilk/eframe_template/blob/master/",
                 "Source code."
