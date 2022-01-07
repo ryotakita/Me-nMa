@@ -1,9 +1,9 @@
 use eframe::{
-    egui::{self, FontDefinitions, FontFamily},
+    egui::{self, FontDefinitions, FontFamily, FontData},
     epi,
 };
 use crate::memo;
-use crate::main;
+mod easy_mark;
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[cfg_attr(feature = "persistence", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(feature = "persistence", serde(default))] // if we add new fields, give them default values when deserializing old state
@@ -41,13 +41,14 @@ impl epi::App for TemplateApp {
     fn setup(
         &mut self,
         _ctx: &egui::CtxRef,
-        _frame: &mut epi::Frame,
+        _frame: &epi::Frame,
         _storage: Option<&dyn epi::Storage>,
     ) {
         let mut fonts = FontDefinitions::default();
+        let fontdata = FontData{font: std::borrow::Cow::Borrowed(include_bytes!("../fonts/NotoSansJP-Regular.otf")),index:0};
         fonts.font_data.insert(
             "my_font".to_owned(),
-            std::borrow::Cow::Borrowed(include_bytes!("../fonts/NotoSansJP-Regular.otf")),
+            fontdata,
         );
         fonts
             .fonts_for_family
@@ -72,7 +73,7 @@ impl epi::App for TemplateApp {
 
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
-    fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame) {
+    fn update(&mut self, ctx: &egui::CtxRef, frame: &epi::Frame) {
         let Self { label, value , search, lst_memo, path_of_show} = self;
 
         // Examples of how to create different panels and windows.
