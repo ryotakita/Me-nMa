@@ -132,6 +132,7 @@ impl epi::App for TemplateApp {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
+            // TODO:VsCodeで表示する機能
             ui.heading("Preview");
             // The central panel the region left after adding TopPanel's and SidePanel's
             ScrollArea::vertical().show(ui, |ui| {
