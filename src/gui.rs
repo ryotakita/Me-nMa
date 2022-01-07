@@ -1,5 +1,9 @@
-use eframe::{egui, epi};
+use eframe::{
+    egui::{self, FontDefinitions, FontFamily},
+    epi,
+};
 use crate::memo;
+use crate::main;
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[cfg_attr(feature = "persistence", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(feature = "persistence", serde(default))] // if we add new fields, give them default values when deserializing old state
@@ -11,6 +15,7 @@ pub struct TemplateApp {
     #[cfg_attr(feature = "persistence", serde(skip))]
     value: f32,
     search: String,
+    lst_memo: Vec<memo::Memo>,
 }
 
 impl Default for TemplateApp {
@@ -20,6 +25,7 @@ impl Default for TemplateApp {
             label: "Hello World!".to_owned(),
             value: 2.7,
             search: "".to_owned(),
+            lst_memo: Vec::new(),
         }
     }
 }
@@ -33,9 +39,20 @@ impl epi::App for TemplateApp {
     fn setup(
         &mut self,
         _ctx: &egui::CtxRef,
-        _frame: &epi::Frame,
+        _frame: &mut epi::Frame,
         _storage: Option<&dyn epi::Storage>,
     ) {
+        let mut fonts = FontDefinitions::default();
+        fonts.font_data.insert(
+            "my_font".to_owned(),
+            std::borrow::Cow::Borrowed(include_bytes!("../fonts/NotoSansJP-Regular.otf")),
+        );
+        fonts
+            .fonts_for_family
+            .get_mut(&FontFamily::Proportional)
+            .unwrap()
+            .insert(0, "my_font".to_owned());
+        _ctx.set_fonts(fonts);
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
         #[cfg(feature = "persistence")]
@@ -53,8 +70,8 @@ impl epi::App for TemplateApp {
 
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
-    fn update(&mut self, ctx: &egui::CtxRef, frame: &epi::Frame) {
-        let Self { label, value , search,} = self;
+    fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame) {
+        let Self { label, value , search, lst_memo,} = self;
 
         // Examples of how to create different panels and windows.
         // Pick whichever suits you.
@@ -66,7 +83,18 @@ impl epi::App for TemplateApp {
                 ui.label("search tags");
                 let response = ui.add(egui::TextEdit::singleline(&mut *search));
                 if response.lost_focus() && ui.input().key_pressed(egui::Key::Enter) {
-                    todo!();
+                    *lst_memo = memo::create_memo_list();
+                    let tag = vec![search.to_string()];
+                    *lst_memo =
+                        if tag.iter().any(|x| x.contains("all")) {
+                            lst_memo.clone()
+                        } else {
+                            lst_memo
+                                .iter()
+                                .filter(|memo| memo::is_include_these_tags(&tag, memo.get_tags()))
+                                .cloned()
+                                .collect()
+                    };
                 }
             });
         });
@@ -74,9 +102,9 @@ impl epi::App for TemplateApp {
         egui::SidePanel::left("MemoList").show(ctx, |ui| {
             ui.heading("MemoList");
 
-            ui.add(egui::Slider::new(value, 0.0..=10.0).text("value"));
-            if ui.button("Increment").clicked() {
-                *value += 1.0;
+            for memo in lst_memo {
+                // TODO:ドラッグの実装
+                ui.add(egui::TextEdit::singleline(&mut memo.get_path().clone()));
             }
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
