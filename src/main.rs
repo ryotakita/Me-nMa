@@ -1,8 +1,11 @@
 use anyhow::{bail, Result};
 use chrono::{Utc};
+use std::env;
 use encoding_rs;
 use std::error::Error;
+use std::io::BufReader;
 use std::fs;
+use serde::{Serialize, Deserialize};
 use std::io::{Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -17,6 +20,7 @@ winrt::import!(
 mod memo;
 mod tui;
 mod gui;
+
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "MenMa")]
@@ -60,7 +64,13 @@ fn main() -> Result<()> {
     let args = Opt::from_args();
     println!("{:?}", args);
 
-    let lst_memo = memo::create_memo_list();
+    // 設定ファイル読み込み
+    println!("{:?}", env::current_exe());
+    let file_setting = fs::File::open("setting.json").expect(&format!("setting.json isn't exist. Please make setting.json at {};", env::current_dir().unwrap().to_str().unwrap()));
+    let reader_setting = BufReader::new(file_setting);
+    let setting: memo::Setting = serde_json::from_reader(reader_setting).expect("can't read jsonfile correctly. Please ensure json format");
+
+    let lst_memo = memo::create_memo_list(&setting.get_memo_path());
 
     match args.sub {
         Sub::List { tags } => {
@@ -131,7 +141,7 @@ fn launch_file(path: &str) -> winrt::Result<()> {
     //assert!(env::set_current_dir(&Path::new("C:/Users/user/Documents/memo")).is_ok());
     let path = path.replace("/", "\\").to_string();
     println!("{}", path);
-    Command::new("Code.exe")
+    Command::new("nvim-qt.exe")
         .arg(path)
         .spawn()
         .expect("failed to open memo");
