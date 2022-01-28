@@ -40,12 +40,17 @@ impl fmt::Display for Memo {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Setting {
-    path_memo: Vec<String>
+    path_memo: Vec<String>,
+    app_using_openmemo: String
 }
 
 impl Setting {
     pub fn get_memo_path(&self) -> &Vec<String> {
         &self.path_memo
+    }
+
+    pub fn get_app_using_openmemo(&self) -> &String {
+        &self.app_using_openmemo
     }
 }
 

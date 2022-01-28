@@ -122,14 +122,14 @@ fn main() -> Result<()> {
                 Ok(_) => println!("finished"),
             }
 
-            launch_file(&(path.to_str().unwrap().to_string() + &filename)).unwrap();
+            launch_file(&(path.to_str().unwrap().to_string() + &filename), setting.get_app_using_openmemo()).unwrap();
             Ok(())
         }
         Sub::SetPath { path: _ } => {
             bail!("this function is not implement;")
         }
         Sub::Todo {} => {
-            launch_file("E:/memo/todo.md").unwrap();
+            launch_file("E:/memo/todo.md", setting.get_app_using_openmemo()).unwrap();
             Ok(())
         }
         Sub::GUI {} => {
@@ -140,11 +140,11 @@ fn main() -> Result<()> {
     }
 }
 
-fn launch_file(path: &str) -> winrt::Result<()> {
+fn launch_file(path: &str, app_using_openmemo: &String) -> winrt::Result<()> {
     //assert!(env::set_current_dir(&Path::new("C:/Users/user/Documents/memo")).is_ok());
     let path = path.replace("/", "\\").to_string();
     println!("{}", path);
-    Command::new("nvim-qt.exe")
+    Command::new(app_using_openmemo)
         .arg(path)
         .spawn()
         .expect("failed to open memo");
