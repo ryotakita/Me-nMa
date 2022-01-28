@@ -65,7 +65,10 @@ fn main() -> Result<()> {
     println!("{:?}", args);
 
     // 設定ファイル読み込み
-    println!("{:?}", env::current_exe());
+    let mut dir_exe = env::current_exe().unwrap();
+    dir_exe.pop();
+    env::set_current_dir(dir_exe);
+
     let file_setting = fs::File::open("setting.json").expect(&format!("setting.json isn't exist. Please make setting.json at {};", env::current_dir().unwrap().to_str().unwrap()));
     let reader_setting = BufReader::new(file_setting);
     let setting: memo::Setting = serde_json::from_reader(reader_setting).expect("can't read jsonfile correctly. Please ensure json format");
