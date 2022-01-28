@@ -1,6 +1,6 @@
 [package]
 name = "menma"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["ryota-kita <ryota-kita@kke.co.jp>"]
 edition = "2018"
 
