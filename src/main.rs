@@ -1,8 +1,11 @@
 use anyhow::{bail, Result};
 use chrono::{Utc};
+use std::env;
 use encoding_rs;
 use std::error::Error;
+use std::io::BufReader;
 use std::fs;
+use serde::{Serialize, Deserialize};
 use std::io::{Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -17,6 +20,7 @@ winrt::import!(
 mod memo;
 mod tui;
 mod gui;
+
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "MenMa")]
@@ -60,7 +64,16 @@ fn main() -> Result<()> {
     let args = Opt::from_args();
     println!("{:?}", args);
 
-    let lst_memo = memo::create_memo_list();
+    // 設定ファイル読み込み
+    let mut dir_exe = env::current_exe().unwrap();
+    dir_exe.pop();
+    env::set_current_dir(dir_exe);
+
+    let file_setting = fs::File::open("setting.json").expect(&format!("setting.json isn't exist. Please make setting.json at {};", env::current_dir().unwrap().to_str().unwrap()));
+    let reader_setting = BufReader::new(file_setting);
+    let setting: memo::Setting = serde_json::from_reader(reader_setting).expect("can't read jsonfile correctly. Please ensure json format");
+
+    let lst_memo = memo::create_memo_list(&setting.get_memo_path());
 
     match args.sub {
         Sub::List { tags } => {
@@ -109,14 +122,14 @@ fn main() -> Result<()> {
                 Ok(_) => println!("finished"),
             }
 
-            launch_file(&(path.to_str().unwrap().to_string() + &filename)).unwrap();
+            launch_file(&(path.to_str().unwrap().to_string() + &filename), setting.get_app_using_openmemo()).unwrap();
             Ok(())
         }
         Sub::SetPath { path: _ } => {
             bail!("this function is not implement;")
         }
         Sub::Todo {} => {
-            launch_file("E:/memo/todo.md").unwrap();
+            launch_file("E:/memo/todo.md", setting.get_app_using_openmemo()).unwrap();
             Ok(())
         }
         Sub::GUI {} => {
@@ -127,11 +140,11 @@ fn main() -> Result<()> {
     }
 }
 
-fn launch_file(path: &str) -> winrt::Result<()> {
+fn launch_file(path: &str, app_using_openmemo: &String) -> winrt::Result<()> {
     //assert!(env::set_current_dir(&Path::new("C:/Users/user/Documents/memo")).is_ok());
     let path = path.replace("/", "\\").to_string();
     println!("{}", path);
-    Command::new("Code.exe")
+    Command::new(app_using_openmemo)
         .arg(path)
         .spawn()
         .expect("failed to open memo");

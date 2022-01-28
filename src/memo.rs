@@ -2,6 +2,7 @@ use std::fmt;
 use std::fs;
 use std::path::{PathBuf};
 use std::error::Error;
+use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone)]
 pub struct Memo {
@@ -37,6 +38,24 @@ impl fmt::Display for Memo {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Setting {
+    path_memo: Vec<String>,
+    app_using_openmemo: String
+}
+
+impl Setting {
+    pub fn get_memo_path(&self) -> &Vec<String> {
+        &self.path_memo
+    }
+
+    pub fn get_app_using_openmemo(&self) -> &String {
+        &self.app_using_openmemo
+    }
+}
+
+
+
 pub fn read_dir(path: &str) -> Result<Vec<PathBuf>, Box<dyn Error>> {
     let dir = fs::read_dir(path)?;
     let mut files: Vec<PathBuf> = Vec::new();
@@ -46,14 +65,23 @@ pub fn read_dir(path: &str) -> Result<Vec<PathBuf>, Box<dyn Error>> {
     Ok(files)
 }
 
-pub fn create_memo_list() -> Vec<Memo> {
-    // TODO:ファイル読み込み
-    let directory = read_dir("E:/memo").unwrap();
+pub fn create_memo_list(lst_path: &Vec<String>) -> Vec<Memo> {
+    let mut lst_memo: Vec<Memo> = Vec::new();
+    for path in lst_path {
+        println!("{}", &path);
+        let directory = read_dir(&path).unwrap();
 
-    let files = directory.into_iter().filter(|file| file.is_file() );
-    let files_md = files.filter(|file| "md" == file.extension().unwrap().to_str().unwrap() );
+        let files = directory.into_iter().filter(|file| file.is_file() );
+        println!("{:?}", &files);
+        let files_md = files.filter(|file| "md" == file.extension().unwrap().to_str().unwrap() );
 
-    files_md.filter_map(|file| create_memo_from_file(&file)).collect()
+        let lst_memo_inthis_dir: Vec<Memo> = files_md.filter_map(|file| create_memo_from_file(&file)).collect();
+        for memo in lst_memo_inthis_dir {
+            lst_memo.push(memo);
+        }
+    }
+
+    lst_memo
 }
 
 pub fn create_memo_from_file(file: &PathBuf) -> Option<Memo> {

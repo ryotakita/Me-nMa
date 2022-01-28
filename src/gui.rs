@@ -2,7 +2,8 @@ use eframe::{
     egui::{self, FontDefinitions, FontFamily, FontData, ScrollArea},
     epi,
 };
-use std::fs::{read_to_string, read};
+use std::fs::{read_to_string, read, File};
+use std::io::BufReader;
 use crate::memo;
 mod easy_mark;
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -74,20 +75,25 @@ impl epi::App for TemplateApp {
 
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
-    fn update(&mut self, ctx: &egui::CtxRef, frame: &epi::Frame) {
-        let Self { label, value , search, lst_memo, path_of_show} = self;
+    fn update(&mut self, ctx: &egui::CtxRef, _frame: &epi::Frame) {
+        let Self { label: _, value: _ , search, lst_memo, path_of_show} = self;
 
         // Examples of how to create different panels and windows.
         // Pick whichever suits you.
         // Tip: a good default choice is to just keep the `CentralPanel`.
         // For inspiration and more examples, go to https://emilk.github.io/egui
+        // 設定ファイル読み込み
+        let file_setting = File::open("setting.json").expect("setting.json isn't exist. Please make setting.json;");
+        let reader_setting = BufReader::new(file_setting);
+        let setting: memo::Setting = serde_json::from_reader(reader_setting).expect("can't read jsonfile correctly. Please ensure json format");
+
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label("search tags");
                 let response = ui.add(egui::TextEdit::singleline(&mut *search));
                 if response.lost_focus() && ui.input().key_pressed(egui::Key::Enter) {
-                    *lst_memo = memo::create_memo_list();
+                    *lst_memo = memo::create_memo_list(setting.get_memo_path());
                     let tag = vec![search.to_string()];
                     *lst_memo =
                         if tag.iter().any(|x| x.contains("all")) {

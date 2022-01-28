@@ -4,6 +4,8 @@ use crate::memo;
 use std::fs;
 use std::path;
 use std::error::Error;
+use std::env;
+use std::io::BufReader;
 use winrt;
 
 winrt::import!(
@@ -64,11 +66,11 @@ pub fn read_dir(path: &str) -> Result<Vec<path::PathBuf>, Box<dyn Error>> {
     Ok(files)
 }
 
-fn launch_file(path: &str) -> winrt::Result<()> {
+fn launch_file(path: &str, app_using_openmemo: &String) -> winrt::Result<()> {
     //assert!(env::set_current_dir(&Path::new("C:/Users/user/Documents/memo")).is_ok());
     let path = path.replace("/", "\\").to_string();
     println!("{}", path);
-    Command::new("Code.exe")
+    Command::new(app_using_openmemo)
         .arg(path)
         .spawn()
         .expect("failed to open memo");
@@ -125,7 +127,10 @@ impl<'a> App<'a> {
                 let path_target = &self.folders[self.folders_index].items[x].get_path();
                 let path_target = path::Path::new(path_target);
                 let path_target = path::PathBuf::from(path_target);
-                launch_file(path_target.to_str().unwrap()).unwrap();
+                let file_setting = fs::File::open("setting.json").expect(&format!("setting.json isn't exist. Please make setting.json at {};", env::current_dir().unwrap().to_str().unwrap()));
+                let reader_setting = BufReader::new(file_setting);
+                let setting: memo::Setting = serde_json::from_reader(reader_setting).expect("can't read jsonfile correctly. Please ensure json format");
+                launch_file(path_target.to_str().unwrap(), setting.get_app_using_openmemo()).unwrap();
             },
             _ => {}
         }
