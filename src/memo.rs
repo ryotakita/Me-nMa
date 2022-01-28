@@ -68,11 +68,17 @@ pub fn read_dir(path: &str) -> Result<Vec<PathBuf>, Box<dyn Error>> {
 pub fn create_memo_list(lst_path: &Vec<String>) -> Vec<Memo> {
     let mut lst_memo: Vec<Memo> = Vec::new();
     for path in lst_path {
-        println!("{}", &path);
+        if cfg!(debug_assertions) {
+            dbg!("{}", &path);
+        }
+
         let directory = read_dir(&path).unwrap();
 
         let files = directory.into_iter().filter(|file| file.is_file() );
-        println!("{:?}", &files);
+        if cfg!(debug_assertions) {
+            dbg!("{:?}", &files);
+        }
+
         let files_md = files.filter(|file| "md" == file.extension().unwrap().to_str().unwrap() );
 
         let lst_memo_inthis_dir: Vec<Memo> = files_md.filter_map(|file| create_memo_from_file(&file)).collect();
